@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Netlify Env Check</title>
+  <style>
+    body {
+      font-family: monospace;
+      max-width: 700px;
+      margin: 60px auto;
+      padding: 0 20px;
+      background: #0f0f0f;
+      color: #e0e0e0;
+    }
+    h1 { color: #00ad9f; margin-bottom: 4px; }
+    p.subtitle { color: #888; margin-top: 0; margin-bottom: 32px; }
+    .var-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      background: #1a1a1a;
+    }
+    .badge {
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 2px 8px;
+      border-radius: 4px;
+      min-width: 60px;
+      text-align: center;
+    }
+    .badge.ok   { background: #1a3a2a; color: #4caf82; }
+    .badge.miss { background: #3a1a1a; color: #cf6679; }
+    .var-name  { color: #c0a0ff; flex: 1; }
+    .var-value { color: #888; font-size: 0.85rem; }
+    #error { color: #cf6679; }
+    #loading { color: #888; }
+  </style>
+</head>
+<body>
+  <h1>Env Var Check</h1>
+  <p class="subtitle">Checking expected environment variables via Netlify Function.</p>
+  <div id="loading">Loading...</div>
+  <div id="results"></div>
+  <div id="error"></div>
+
+  <script>
+    async function checkEnv() {
+      const loading = document.getElementById("loading");
+      const results = document.getElementById("results");
+      const error   = document.getElementById("error");
+
+      try {
+        const res = await fetch("/.netlify/functions/env-check");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        loading.remove();
+
+        for (const [key, info] of Object.entries(data)) {
+          const row = document.createElement("div");
+          row.className = "var-row";
+          row.innerHTML = `
+            <span class="badge ${info.present ? "ok" : "miss"}">${info.present ? "✓ SET" : "✗ MISSING"}</span>
+            <span class="var-name">${key}</span>
+            <span class="var-value">${info.value !== null ? info.value : "—"}</span>
+          `;
+          results.appendChild(row);
+        }
+      } catch (err) {
+        loading.remove();
+        error.textContent = `Failed to fetch env check: ${err.message}`;
+      }
+    }
+
+    checkEnv();
+  </script>
+</body>
+</html>
